@@ -15,7 +15,7 @@ keywords = ["protein", "folding", "ai", "fastfold", "sdk", "cli"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "License :: Other/Proprietary License",
+    "License :: OSI Approved :: Apache Software License",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
@@ -27,3 +27,9 @@ Repository = "https://fastfold.ai"
 
 [project.scripts]
 fastfold = "fastfold.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fastfold"]
+
+[tool.hatch.build.targets.sdist]
+include = ["fastfold", "README.md", "pyproject.toml"]
