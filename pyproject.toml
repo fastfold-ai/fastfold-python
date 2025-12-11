@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling>=1.20.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fastfold"
+version = "0.1.0"
+description = "FastFold Python SDK and CLI for submitting folding jobs"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Proprietary" }
+authors = [{ name = "FastFold", email = "hello@fastfold.ai" }]
+dependencies = ["requests>=2.31.0,<3"]
+keywords = ["protein", "folding", "ai", "fastfold", "sdk", "cli"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: Other/Proprietary License",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+[project.urls]
+Homepage = "https://fastfold.ai"
+Repository = "https://fastfold.ai"
+
+[project.scripts]
+fastfold = "fastfold.cli:main"
