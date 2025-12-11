@@ -3,12 +3,12 @@ requires = ["hatchling>=1.20.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "fastfold"
+name = "fastfold-ai"
 version = "0.1.0"
-description = "FastFold Python SDK and CLI for submitting folding jobs"
+description = "Official Python SDK and CLI for the FastFold API"
 readme = "README.md"
 requires-python = ">=3.8"
-license = { text = "Proprietary" }
+license = "Apache-2.0"
 authors = [{ name = "FastFold", email = "hello@fastfold.ai" }]
 dependencies = ["requests>=2.31.0,<3"]
 keywords = ["protein", "folding", "ai", "fastfold", "sdk", "cli"]
