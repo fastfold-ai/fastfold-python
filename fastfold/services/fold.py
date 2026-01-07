@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 from ..http import HTTPClient
 from ..models import Job
@@ -10,9 +10,11 @@ class FoldService:
 
     def create(
         self,
-        sequence: str,
         model: str,
         name: Optional[str] = None,
+        is_public: Optional[bool] = None,
+        sequences: Optional[List[Dict[str, Any]]] = None,
+        sequence: Optional[str] = None,
         from_id: Optional[str] = None,
         params: Optional[Dict[str, Any]] = None,
         constraints: Optional[Dict[str, Any]] = None,
@@ -20,22 +22,32 @@ class FoldService:
         """
         Create a folding job.
 
-        Minimal usage:
-            create(sequence="...", model="boltz-2")
+        Minimal usage (backwards compatible):
+            create(model="boltz-2", sequence="...")
+
+        Typed sequences per API:
+            create(
+                model="boltz-2",
+                sequences=[
+                    {"proteinChain": {"sequence": "...", "chain_id": "A"}},
+                    {"ligandSequence": {"sequence": "ATP", "is_ccd": True, "chain_id": "B"}},
+                ],
+                is_public=False,
+            )
         """
-        payload: Dict[str, Any] = {
-            "name": name or "FastFold Job",
-            "sequences": [
-                {
-                    "proteinChain": {
-                        "sequence": sequence,
-                    }
-                }
-            ],
-            "params": {
-                "modelName": model,
-            },
-        }
+        if sequences is None:
+            if not sequence:
+                raise ValueError("Either 'sequences' or 'sequence' must be provided.")
+            resolved_sequences: List[Dict[str, Any]] = [
+                {"proteinChain": {"sequence": sequence}}
+            ]
+        else:
+            resolved_sequences = sequences
+
+        payload: Dict[str, Any] = {"name": name or "FastFold Job", "sequences": resolved_sequences, "params": {"modelName": model}}
+
+        if is_public is not None:
+            payload["isPublic"] = is_public
 
         if params:
             # Merge/override provided params

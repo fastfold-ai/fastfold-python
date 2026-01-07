@@ -4,6 +4,7 @@ from typing import Optional
 from .errors import AuthenticationError
 from .http import HTTPClient
 from .services.fold import FoldService
+from .services.jobs import JobsService
 
 
 class Client:
@@ -20,6 +21,7 @@ class Client:
 
         # Services
         self.fold = FoldService(self._http)
+        self.jobs = JobsService(self._http)
 
 
 

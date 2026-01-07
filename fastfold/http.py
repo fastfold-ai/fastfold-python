@@ -35,6 +35,16 @@ class HTTPClient:
         resp = self.session.post(url, json=json, params=params, timeout=self.timeout)
         return self._handle_response(resp)
 
+    def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        url = f"{self.base_url}{path}"
+        resp = self.session.get(url, params=params, timeout=self.timeout)
+        return self._handle_response(resp)
+
+    def patch(self, path: str, json: Optional[Dict[str, Any]] = None, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        url = f"{self.base_url}{path}"
+        resp = self.session.patch(url, json=json, params=params, timeout=self.timeout)
+        return self._handle_response(resp)
+
     @staticmethod
     def _handle_response(resp: requests.Response) -> Dict[str, Any]:
         if resp.status_code == 401:
