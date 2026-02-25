@@ -2,6 +2,8 @@
 
 Python client and CLI for the FastFold Jobs API.
 
+<a href="https://colab.research.google.com/drive/1gW6p82UkzvSSzZTHgcITkzoAihuotkZm?usp=sharing" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
 ## Installation
 
 From the project root:
@@ -47,6 +49,9 @@ results = client.jobs.wait_for_completion(myJob.id, poll_interval=5.0, timeout=9
 print("Status:", results.job.status)
 print("CIF URL:", results.cif_url())
 print("Mean PLDDT:", results.metrics().mean_PLDDT)
+# Generate a shareable viewer link for this job
+link = results.get_viewer_link()
+print("Open in viewer:", link)
 ```
 
 Advanced usage for Boltz-2 with Affinity prediction and pockets:
@@ -116,6 +121,8 @@ print("affinity_pred_value1:", metrics.affinity_pred_value1)
 print("affinity_probability_binary1:", metrics.affinity_probability_binary1)
 print("affinity_pred_value2:", metrics.affinity_pred_value2)
 print("affinity_probability_binary2:", metrics.affinity_probability_binary2)
+link = results.get_viewer_link()
+print("Open in viewer:", link)
 ```
 
 ### Non-complex multi-sequence artifacts (indexing)
@@ -163,6 +170,11 @@ m0 = results[0].metrics()
 m1 = results[1].metrics()
 print("Chain A mean PLDDT:", m0.mean_PLDDT)
 print("Chain B mean PLDDT:", m1.mean_PLDDT)
+
+# Generate a shareable viewer link for this job
+link = results.get_viewer_link()
+print("Open in viewer:", link)
+
 ```
 
 ### Create with library source (from_id) and additional params
@@ -250,18 +262,62 @@ else:
     print("Chain B mean_PLDDT:", m1.mean_PLDDT)
 ```
 
+### Fetch existing job by ID
+
+```python
+from fastfold import Client
+
+client = Client()
+job_id = "550e8400-e29b-41d4-a716-446655440000"
+
+# Wait for the existing job to complete
+results = client.jobs.wait_for_completion(job_id, poll_interval=5.0, timeout=900.0)
+print("Status:", results.job.status)
+
+# Complex job example (top-level artifacts)
+cif_url = results.cif_url()
+pdb_url = results.pdb_url()
+pae_url = results.pae_plot_url()
+plddt_url = results.plddt_plot_url()
+print("CIF URL:", cif_url)
+print("PDB URL:", pdb_url)
+print("PAE URL:", pae_url)
+print("pLDDT URL:", plddt_url)
+
+metrics = results.metrics()
+print("mean_PLDDT:", metrics.mean_PLDDT)
+print("ptm_score:", metrics.ptm_score)
+print("iptm_score:", metrics.iptm_score)
+print("max_pae_score:", metrics.max_pae_score)
+
+# Optional: viewer link
+link = results.get_viewer_link()
+print("Open in viewer:", link)
+```
+
+```python
+# Non-complex example (index into sequences)
+results = client.jobs.wait_for_completion(job_id, poll_interval=5.0, timeout=900.0)
+cif_seq0 = results[0].cif_url()
+pdb_seq0 = results[0].pdb_url()
+m0 = results[0].metrics()
+print("Seq0 CIF:", cif_seq0)
+print("Seq0 PDB:", pdb_seq0)
+print("Seq0 mean_PLDDT:", m0.mean_PLDDT)
+```
+
 ## CLI Usage
 
 Submit a folding job:
 
 ```bash
-fastfold fold --sequence "LLGDFFRKSKEKIGKEFKRIVQRIKDFLRNLVPRTES" --model boltz-2
+fastfold-cli fold --sequence "LLGDFFRKSKEKIGKEFKRIVQRIKDFLRNLVPRTES" --model boltz-2
 ```
 
 Optional flags:
 
 ```bash
-fastfold fold \
+fastfold-cli fold \
   --sequence "..." \
   --model boltz-2 \
   --name "My Job" \
@@ -270,3 +326,13 @@ fastfold fold \
 ```
 
 On success the CLI prints the created job ID to stdout.
+
+### AI Research Agent
+
+Launch the FastFold AI research agent (installs `fastfold-agent-cli` automatically if not present):
+
+```bash
+fastfold-cli agent "what are the top EGFR inhibitors for lung cancer?"
+```
+
+Any flags or arguments are forwarded directly to the agent.

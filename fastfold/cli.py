@@ -1,11 +1,15 @@
 import argparse
 import json
 import os
+import subprocess
 import sys
 from typing import Any, Dict, Optional
 
 from .client import Client
 from .errors import FastFoldError, AuthenticationError
+
+_AGENT_PKG = "fastfold-agent-cli"
+_AGENT_CMD = "fastfold"
 
 
 def _print_err(msg: str) -> None:
@@ -20,10 +24,10 @@ def _positive_exit(code: int = 0) -> None:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="fastfold", description="FastFold CLI")
+    parser = argparse.ArgumentParser(prog="fastfold-cli", description="FastFold CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # fastfold fold ...
+    # fastfold-cli fold ...
     fold_parser = subparsers.add_parser("fold", help="Create a folding job")
     fold_parser.add_argument("--sequence", required=True, help="Protein sequence (single letter amino acids)")
     fold_parser.add_argument("--model", required=True, help="Model name (e.g., boltz-2, monomer, multimer, esm1b, boltz)")
@@ -34,6 +38,14 @@ def _build_parser() -> argparse.ArgumentParser:
     fold_parser.add_argument("--api-key", required=False, help="API Key (overrides FASTFOLD_API_KEY)")
     fold_parser.add_argument("--base-url", required=False, help="API base URL (default https://api.fastfold.ai)")
     fold_parser.add_argument("--timeout", required=False, type=float, default=30.0, help="HTTP timeout in seconds")
+
+    # fastfold-cli agent ...
+    agent_parser = subparsers.add_parser(
+        "agent",
+        help="Run the FastFold AI research agent (installs fastfold-agent-cli if needed)",
+        add_help=False,
+    )
+    agent_parser.add_argument("args", nargs=argparse.REMAINDER, help="Query or flags passed to the agent")
 
     return parser
 
@@ -79,12 +91,48 @@ def handle_fold(args: argparse.Namespace) -> int:
         return 1
 
 
+def _agent_is_installed() -> bool:
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "show", _AGENT_PKG],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def handle_agent(args: argparse.Namespace) -> int:
+    if not _agent_is_installed():
+        sys.stderr.write(f"Installing {_AGENT_PKG} from PyPI...\n")
+        sys.stderr.flush()
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", _AGENT_PKG],
+        )
+        if result.returncode != 0:
+            _print_err(f"Failed to install {_AGENT_PKG}.")
+            return 1
+        sys.stderr.write(f"{_AGENT_PKG} installed.\n")
+
+    agent_args = args.args or []
+    # Strip leading '--' separator that argparse may leave
+    if agent_args and agent_args[0] == "--":
+        agent_args = agent_args[1:]
+
+    result = subprocess.run([_AGENT_CMD, *agent_args])
+    return result.returncode
+
+
 def main() -> None:
     parser = _build_parser()
     args = parser.parse_args()
 
     if args.command == "fold":
         code = handle_fold(args)
+        _positive_exit(code)
+    elif args.command == "agent":
+        code = handle_agent(args)
         _positive_exit(code)
     else:
         parser.print_help()

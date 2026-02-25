@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlencode
+import warnings
 
 
 @dataclass
@@ -166,37 +168,46 @@ class JobSequence:
 
     def cif_url(self) -> Optional[str]:
         if self.job_status != "COMPLETED":
-            raise ValueError(f"Job is not completed yet (status: {self.job_status}). Please wait until COMPLETED.")
+            warnings.warn(f"[FastFold] Job is not completed yet (status: {self.job_status}). CIF URL may be unavailable.")
+            return None
         if not self.prediction_payload or not self.prediction_payload.cif_url:
-            raise ValueError("No CIF URL available for this sequence.")
-        return self.prediction_payload.cif_url if self.prediction_payload else None
+            warnings.warn("[FastFold] No CIF URL available for this sequence.")
+            return None
+        return self.prediction_payload.cif_url
 
     def pdb_url(self) -> Optional[str]:
         if self.job_status != "COMPLETED":
-            raise ValueError(f"Job is not completed yet (status: {self.job_status}). Please wait until COMPLETED.")
+            warnings.warn(f"[FastFold] Job is not completed yet (status: {self.job_status}). PDB URL may be unavailable.")
+            return None
         if not self.prediction_payload or not self.prediction_payload.pdb_url:
-            raise ValueError("No PDB URL available for this sequence.")
-        return self.prediction_payload.pdb_url if self.prediction_payload else None
+            warnings.warn("[FastFold] No PDB URL available for this sequence.")
+            return None
+        return self.prediction_payload.pdb_url
 
     def pae_plot_url(self) -> Optional[str]:
         if self.job_status != "COMPLETED":
-            raise ValueError(f"Job is not completed yet (status: {self.job_status}). Please wait until COMPLETED.")
+            warnings.warn(f"[FastFold] Job is not completed yet (status: {self.job_status}). PAE plot URL may be unavailable.")
+            return None
         if not self.prediction_payload or not self.prediction_payload.pae_plot_url:
-            raise ValueError("No PAE plot URL available for this sequence.")
-        return self.prediction_payload.pae_plot_url if self.prediction_payload else None
+            warnings.warn("[FastFold] No PAE plot URL available for this sequence.")
+            return None
+        return self.prediction_payload.pae_plot_url
 
     def plddt_plot_url(self) -> Optional[str]:
         if self.job_status != "COMPLETED":
-            raise ValueError(f"Job is not completed yet (status: {self.job_status}). Please wait until COMPLETED.")
+            warnings.warn(f"[FastFold] Job is not completed yet (status: {self.job_status}). pLDDT plot URL may be unavailable.")
+            return None
         if not self.prediction_payload or not self.prediction_payload.plddt_plot_url:
-            raise ValueError("No pLDDT plot URL available for this sequence.")
-        return self.prediction_payload.plddt_plot_url if self.prediction_payload else None
+            warnings.warn("[FastFold] No pLDDT plot URL available for this sequence.")
+            return None
+        return self.prediction_payload.plddt_plot_url
 
-    def metrics(self) -> Metrics:
+    def metrics(self) -> "Metrics":
         if self.job_status != "COMPLETED":
-            raise ValueError(f"Job is not completed yet (status: {self.job_status}). Please wait until COMPLETED.")
+            warnings.warn(f"[FastFold] Job is not completed yet (status: {self.job_status}). Metrics may be unavailable.")
         if not self.prediction_payload:
-            raise ValueError("No metrics available for this sequence.")
+            warnings.warn("[FastFold] No metrics available for this sequence.")
+            return Metrics(PredictionPayload.from_api({}))  # all None
         return Metrics(self.prediction_payload)
 
 @dataclass
@@ -269,63 +280,86 @@ class JobResults:
 
     def cif_url(self) -> Optional[str]:
         if self.job.status != "COMPLETED":
-            raise ValueError(f"Job is not completed yet (status: {self.job.status}). Please wait until COMPLETED.")
+            warnings.warn(f"[FastFold] Job is not completed yet (status: {self.job.status}). CIF URL may be unavailable.")
+            return None
         if self.job.is_complex:
             if self.prediction_payload and self.prediction_payload.cif_url:
                 return self.prediction_payload.cif_url
-            raise ValueError("No CIF URL available for this job.")
+            warnings.warn("[FastFold] No CIF URL available for this job.")
+            return None
         # Non-complex: if there's exactly one sequence, default to it
         if len(self.sequences) == 1:
             return self.sequences[0].cif_url()
-        raise ValueError("cif_url() is only available for complex jobs or single-sequence results. For multi-sequence non-complex jobs, use results[i].cif_url().")
+        warnings.warn("[FastFold] Multiple sequences present; use results[i].cif_url() for per-sequence CIF URL.")
+        return None
 
     def pdb_url(self) -> Optional[str]:
         if self.job.status != "COMPLETED":
-            raise ValueError(f"Job is not completed yet (status: {self.job.status}). Please wait until COMPLETED.")
+            warnings.warn(f"[FastFold] Job is not completed yet (status: {self.job.status}). PDB URL may be unavailable.")
+            return None
         if self.job.is_complex:
             if self.prediction_payload and self.prediction_payload.pdb_url:
                 return self.prediction_payload.pdb_url
-            raise ValueError("No PDB URL available for this job.")
+            warnings.warn("[FastFold] No PDB URL available for this job.")
+            return None
         # Non-complex: if there's exactly one sequence, default to it
         if len(self.sequences) == 1:
             return self.sequences[0].pdb_url()
-        raise ValueError("pdb_url() is only available for complex jobs or single-sequence results. For multi-sequence non-complex jobs, use results[i].pdb_url().")
+        warnings.warn("[FastFold] Multiple sequences present; use results[i].pdb_url() for per-sequence PDB URL.")
+        return None
 
     def pae_plot_url(self) -> Optional[str]:
         if self.job.status != "COMPLETED":
-            raise ValueError(f"Job is not completed yet (status: {self.job.status}). Please wait until COMPLETED.")
+            warnings.warn(f"[FastFold] Job is not completed yet (status: {self.job.status}). PAE plot URL may be unavailable.")
+            return None
         if self.job.is_complex:
             if self.prediction_payload and self.prediction_payload.pae_plot_url:
                 return self.prediction_payload.pae_plot_url
-            raise ValueError("No PAE plot URL available for this job.")
+            warnings.warn("[FastFold] No PAE plot URL available for this job.")
+            return None
         # Non-complex: if there's exactly one sequence, default to it
         if len(self.sequences) == 1:
             return self.sequences[0].pae_plot_url()
-        raise ValueError("pae_plot_url() is only available for complex jobs or single-sequence results. For multi-sequence non-complex jobs, use results[i].pae_plot_url().")
+        warnings.warn("[FastFold] Multiple sequences present; use results[i].pae_plot_url() for per-sequence PAE plot URL.")
+        return None
 
     def plddt_plot_url(self) -> Optional[str]:
         if self.job.status != "COMPLETED":
-            raise ValueError(f"Job is not completed yet (status: {self.job.status}). Please wait until COMPLETED.")
+            warnings.warn(f"[FastFold] Job is not completed yet (status: {self.job.status}). pLDDT plot URL may be unavailable.")
+            return None
         if self.job.is_complex:
             if self.prediction_payload and self.prediction_payload.plddt_plot_url:
                 return self.prediction_payload.plddt_plot_url
-            raise ValueError("No pLDDT plot URL available for this job.")
+            warnings.warn("[FastFold] No pLDDT plot URL available for this job.")
+            return None
         # Non-complex: if there's exactly one sequence, default to it
         if len(self.sequences) == 1:
             return self.sequences[0].plddt_plot_url()
-        raise ValueError("plddt_plot_url() is only available for complex jobs or single-sequence results. For multi-sequence non-complex jobs, use results[i].plddt_plot_url().")
+        warnings.warn("[FastFold] Multiple sequences present; use results[i].plddt_plot_url() for per-sequence pLDDT plot URL.")
+        return None
 
-    def metrics(self) -> Metrics:
+    def metrics(self) -> "Metrics":
         if self.job.status != "COMPLETED":
-            raise ValueError(f"Job is not completed yet (status: {self.job.status}). Please wait until COMPLETED.")
+            warnings.warn(f"[FastFold] Job is not completed yet (status: {self.job.status}). Metrics may be unavailable.")
         if self.job.is_complex:
             if not self.prediction_payload:
-                raise ValueError("No metrics available for this job.")
+                warnings.warn("[FastFold] No metrics available for this job.")
+                return Metrics(PredictionPayload.from_api({}))  # all None
             return Metrics(self.prediction_payload)
         # Non-complex: single sequence convenience
         if len(self.sequences) == 1:
             return self.sequences[0].metrics()
-        raise ValueError("metrics() is only available for complex jobs or single-sequence results. For multi-sequence non-complex jobs, use results[i].metrics().")
+        warnings.warn("[FastFold] Multiple sequences present; use results[i].metrics() for per-sequence metrics.")
+        return Metrics(PredictionPayload.from_api({}))  # all None
+
+    def get_viewer_link(self, base_url: Optional[str] = None) -> str:
+        """
+        Return a link to open the job in the FastFold cloud viewer.
+        Default: https://cloud.fastfold.ai/mol/new?from=jobs&job_id=<id>
+        """
+        host = (base_url or "https://cloud.fastfold.ai").rstrip("/")
+        query = urlencode({"from": "jobs", "job_id": self.job.id})
+        return f"{host}/mol/new?{query}"
 
 
 @dataclass
