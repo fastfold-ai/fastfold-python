@@ -1,0 +1,17 @@
+{
+  "name": "KEAP1 + IQK (Quick Membrane)",
+  "smallMoleculeMode": "single",
+  "equilibration": "only_minimization",
+  "sim_length_ns": 0.05,
+  "step_time_ps": 0.002,
+  "failure_retries": 0,
+  "addWater": false,
+  "addMembrane": true,
+  "membranePadding": 2.0,
+  "lipidType": "POPC",
+  "writeDCD": true,
+  "dcdFrames": 5,
+  "pdbInterval_ns": 0.05,
+  "writeData": false,
+  "writeCheckpoint": false
+}

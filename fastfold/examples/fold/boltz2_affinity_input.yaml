@@ -1,0 +1,15 @@
+version: 1
+sequences:
+  - protein:
+      id: A
+      sequence: MTEYKLVVVGACGVGKSALTIQLIQNHFVDEYDPTIEDSYRKQVVIDGETCLLDILDTAGQEEYSAMRDQYMRTGEGFLCVFAINNTKSFEDIHHYREQIKRVKDSEDVPMVLVGNKCDLPSRTVDTKQAQDLARSYGIPFIETSAKTRQGVDDAFYTLVREIRKHKE
+  - ligand:
+      id: B
+      ccd: U4U
+properties:
+  - affinity:
+      binder: B
+constraints:
+  - bond:
+      atom1: [A, 12, SG]
+      atom2: [B, 1, C22]

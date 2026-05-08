@@ -1,0 +1,55 @@
+version: 1
+jobs:
+  start:
+    type: start
+    position:
+      x: 66.67
+      y: 133.33
+    description: Workflow start point
+    label: Start
+  design_spec:
+    type: input
+    position:
+      x: 327.78
+      y: 133.33
+    subType: design_specification_yml
+    workflowTaskTypeId: input_design_spec_boltzgen_v1
+    inputPayload:
+      inputYML: "{{DESIGN_SPEC_FILE}}"
+      inputYMLLibraryItemId: "{{DESIGN_SPEC_LIBRARY_ITEM_ID}}"
+      files:
+        - libraryItemId: "{{STRUCTURE_LIBRARY_ITEM_ID}}"
+          fileName: "{{STRUCTURE_FILE_NAME}}"
+    label: Design Spec
+  boltzgen:
+    type: pipeline
+    position:
+      x: 588.89
+      y: 133.33
+    subType: boltzgen
+    workflowTaskTypeId: pipeline_run_boltzgen_v1
+    inputPayload:
+      protocolName: protein-anything
+      numDesigns: 1
+      budget: 1
+    label: BoltzGen
+  end:
+    type: end
+    position:
+      x: 850
+      y: 133.33
+    description: Workflow end point
+    label: End
+workflows:
+  main:
+    jobs:
+      - start
+      - design_spec:
+          requires:
+            - start
+      - boltzgen:
+          requires:
+            - design_spec
+      - end:
+          requires:
+            - boltzgen

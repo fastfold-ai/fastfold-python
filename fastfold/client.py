@@ -3,8 +3,14 @@ from typing import Optional
 
 from .errors import AuthenticationError
 from .http import HTTPClient
+from .services.boltzgen import BoltzGenService
 from .services.fold import FoldService
 from .services.jobs import JobsService
+from .services.library import LibraryService
+from .services.openmm import OpenMMService
+from .services.openmmdl import OpenMMDLService
+from .services.reports import ReportsService
+from .services.workflows import WorkflowsService
 
 
 class Client:
@@ -22,6 +28,12 @@ class Client:
         # Services
         self.fold = FoldService(self._http)
         self.jobs = JobsService(self._http)
+        self.workflows = WorkflowsService(self._http)
+        self.library = LibraryService(self._http)
+        self.openmm = OpenMMService(self.jobs, self.workflows, self.library)
+        self.openmmdl = OpenMMDLService(self.workflows, self.library)
+        self.boltzgen = BoltzGenService(self.workflows, self.library)
+        self.reports = ReportsService(self._http)
 
 
 

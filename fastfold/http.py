@@ -1,5 +1,5 @@
 import json as _json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Mapping, Optional
 
 import requests
 
@@ -20,6 +20,7 @@ class HTTPClient:
     def __init__(self, base_url: str, api_key: str, timeout: float = 30.0):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.api_key = api_key
         self.session = requests.Session()
         self.session.headers.update(
             {
@@ -30,25 +31,82 @@ class HTTPClient:
             }
         )
 
-    def post(self, path: str, json: Optional[Dict[str, Any]] = None, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Optional[Mapping[str, Any]] = None,
+        json: Optional[Any] = None,
+        data: Optional[Any] = None,
+        files: Optional[Any] = None,
+        headers: Optional[Mapping[str, str]] = None,
+        timeout: Optional[float] = None,
+    ) -> requests.Response:
         url = f"{self.base_url}{path}"
-        resp = self.session.post(url, json=json, params=params, timeout=self.timeout)
+        request_headers = dict(headers or {})
+        if files:
+            request_headers["Content-Type"] = None
+        resp = self.session.request(
+            method.upper(),
+            url,
+            params=dict(params or {}),
+            json=json,
+            data=data,
+            files=files,
+            headers=request_headers or None,
+            timeout=self.timeout if timeout is None else timeout,
+        )
+        return resp
+
+    def get(self, path: str, params: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
+        resp = self.request("GET", path, params=params)
         return self._handle_response(resp)
 
-    def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        url = f"{self.base_url}{path}"
-        resp = self.session.get(url, params=params, timeout=self.timeout)
+    def post(self, path: str, json: Optional[Any] = None, params: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
+        resp = self.request("POST", path, json=json, params=params)
         return self._handle_response(resp)
 
-    def patch(self, path: str, json: Optional[Dict[str, Any]] = None, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        url = f"{self.base_url}{path}"
-        resp = self.session.patch(url, json=json, params=params, timeout=self.timeout)
+    def patch(self, path: str, json: Optional[Any] = None, params: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
+        resp = self.request("PATCH", path, json=json, params=params)
+        return self._handle_response(resp)
+
+    def post_text(
+        self,
+        path: str,
+        text: str,
+        *,
+        params: Optional[Mapping[str, Any]] = None,
+        content_type: str = "text/yaml",
+    ) -> Dict[str, Any]:
+        resp = self.request(
+            "POST",
+            path,
+            params=params,
+            data=text.encode("utf-8"),
+            headers={"Content-Type": content_type, "Accept": "application/json"},
+        )
+        return self._handle_response(resp)
+
+    def get_text(self, path: str, params: Optional[Mapping[str, Any]] = None) -> str:
+        resp = self.request("GET", path, params=params, headers={"Accept": "text/yaml, text/plain, */*"})
+        self._raise_for_status(resp)
+        return resp.text
+
+    def post_multipart(
+        self,
+        path: str,
+        *,
+        files: Any,
+        params: Optional[Mapping[str, Any]] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Dict[str, Any]:
+        resp = self.request("POST", path, params=params, files=files, headers=headers)
         return self._handle_response(resp)
 
     @staticmethod
-    def _handle_response(resp: requests.Response) -> Dict[str, Any]:
+    def _raise_for_status(resp: requests.Response) -> None:
         if resp.status_code == 401:
-            # Try to extract error message if provided
             try:
                 msg = resp.json().get("message", "Unauthorized")
             except Exception:
@@ -70,6 +128,9 @@ class HTTPClient:
                 msg = resp.text or f"HTTP {resp.status_code}"
             raise APIError(msg, status_code=resp.status_code, response=resp)
 
+    @staticmethod
+    def _handle_response(resp: requests.Response) -> Dict[str, Any]:
+        HTTPClient._raise_for_status(resp)
         try:
             return resp.json()
         except Exception:

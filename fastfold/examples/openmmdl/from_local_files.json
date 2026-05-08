@@ -1,0 +1,35 @@
+{
+  "workflow_name": "openmmdl_v1",
+  "name": "KEAP1 + IQK",
+  "workflow_input": {
+    "name": "KEAP1 + IQK",
+    "files": {
+      "topology": {
+        "libraryItemId": "33333333-3333-3333-3333-333333333333",
+        "fileName": "KEAP1kd.pdb"
+      },
+      "ligands": [
+        {
+          "libraryItemId": "44444444-4444-4444-4444-444444444444",
+          "fileName": "IQK.sdf"
+        }
+      ]
+    },
+    "smallMoleculeMode": "single",
+    "equilibration": "only_minimization",
+    "sim_length_ns": 0.05,
+    "step_time_ps": 0.002,
+    "failure_retries": 0,
+    "addWater": false,
+    "addMembrane": false,
+    "boxType": "geometry",
+    "geomPadding": 1.0,
+    "geometryDropdown": "cube",
+    "membranePadding": 2.0,
+    "writeDCD": true,
+    "dcdFrames": 5,
+    "pdbInterval_ns": 0.05,
+    "writeData": false,
+    "writeCheckpoint": false
+  }
+}

@@ -1,0 +1,15 @@
+entities:
+  - protein:
+      id: G
+      sequence: 12..20
+
+  - file:
+      path: 5cqg.cif
+      include:
+        - chain:
+            id: A
+      binding_types:
+        - chain:
+            id: A
+            binding: 343,344,251
+      structure_groups: "all"

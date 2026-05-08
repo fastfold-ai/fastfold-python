@@ -371,3 +371,282 @@ class JobPublicUpdateResponse:
     def from_api(cls, data: Dict[str, Any]) -> "JobPublicUpdateResponse":
         return cls(job_id=data["jobId"], is_public=data.get("isPublic"))
 
+
+@dataclass
+class WorkflowTask:
+    task_id: str
+    task_type: Optional[str]
+    status: Optional[str]
+    created_at: Optional[str]
+    updated_at: Optional[str]
+    completion_time_in_seconds: Optional[float]
+    output_library_items: Optional[List[Dict[str, Any]]]
+    result_raw_json: Optional[Any]
+    output: Optional[Dict[str, Any]]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "WorkflowTask":
+        return cls(
+            task_id=str(data.get("task_id") or data.get("taskId") or ""),
+            task_type=data.get("task_type") or data.get("taskType"),
+            status=data.get("status"),
+            created_at=data.get("created_at") or data.get("createdAt"),
+            updated_at=data.get("updated_at") or data.get("updatedAt"),
+            completion_time_in_seconds=data.get("completion_time_in_seconds") or data.get("completionTimeInSeconds"),
+            output_library_items=data.get("output_library_items") or data.get("outputLibraryItems"),
+            result_raw_json=data.get("result_raw_json") or data.get("resultRawJson"),
+            output=data.get("output"),
+            raw=data,
+        )
+
+
+@dataclass
+class WorkflowRun:
+    workflow_id: str
+    status: Optional[str]
+    workflow_type: Optional[str]
+    name: Optional[str]
+    input_payload: Optional[Dict[str, Any]]
+    created_at: Optional[str]
+    updated_at: Optional[str]
+    tasks_total_count: Optional[int]
+    tasks_completed_count: Optional[int]
+    tasks_failed_count: Optional[int]
+    tasks: List[WorkflowTask]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "WorkflowRun":
+        return cls(
+            workflow_id=str(data.get("workflow_id") or data.get("workflowId") or ""),
+            status=data.get("status"),
+            workflow_type=data.get("workflow_type") or data.get("workflowType"),
+            name=data.get("name"),
+            input_payload=data.get("input_payload") or data.get("inputPayload"),
+            created_at=data.get("created_at") or data.get("createdAt"),
+            updated_at=data.get("updated_at") or data.get("updatedAt"),
+            tasks_total_count=data.get("tasks_total_count") or data.get("tasksTotalCount"),
+            tasks_completed_count=data.get("tasks_completed_count") or data.get("tasksCompletedCount"),
+            tasks_failed_count=data.get("tasks_failed_count") or data.get("tasksFailedCount"),
+            tasks=[WorkflowTask.from_api(item) for item in data.get("tasks", [])],
+            raw=data,
+        )
+
+
+@dataclass
+class WorkflowStatusTask:
+    task_id: str
+    task_type: Optional[str]
+    status: Optional[str]
+    node_id: Optional[str]
+    order_index: Optional[int]
+    created_at: Optional[str]
+    updated_at: Optional[str]
+    completion_time_in_seconds: Optional[float]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "WorkflowStatusTask":
+        return cls(
+            task_id=str(data.get("task_id") or data.get("taskId") or ""),
+            task_type=data.get("task_type") or data.get("taskType"),
+            status=data.get("status"),
+            node_id=str(data.get("node_id") or data.get("nodeId") or "") or None,
+            order_index=data.get("order_index") or data.get("orderIndex"),
+            created_at=data.get("created_at") or data.get("createdAt"),
+            updated_at=data.get("updated_at") or data.get("updatedAt"),
+            completion_time_in_seconds=data.get("completion_time_in_seconds") or data.get("completionTimeInSeconds"),
+            raw=data,
+        )
+
+
+@dataclass
+class WorkflowStatus:
+    workflow_id: str
+    status: Optional[str]
+    created_at: Optional[str]
+    updated_at: Optional[str]
+    tasks: List[WorkflowStatusTask]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "WorkflowStatus":
+        return cls(
+            workflow_id=str(data.get("workflow_id") or data.get("workflowId") or ""),
+            status=data.get("status"),
+            created_at=data.get("created_at") or data.get("createdAt"),
+            updated_at=data.get("updated_at") or data.get("updatedAt"),
+            tasks=[WorkflowStatusTask.from_api(item) for item in data.get("tasks", [])],
+            raw=data,
+        )
+
+
+@dataclass
+class WorkflowTaskResult:
+    task_id: str
+    task_type: Optional[str]
+    parsed_results: Optional[List[Dict[str, Any]]]
+    output_library_items: Optional[List[Dict[str, Any]]]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "WorkflowTaskResult":
+        return cls(
+            task_id=str(data.get("task_id") or data.get("taskId") or ""),
+            task_type=data.get("task_type") or data.get("taskType"),
+            parsed_results=data.get("parsed_results") or data.get("parsedResults"),
+            output_library_items=data.get("output_library_items") or data.get("outputLibraryItems"),
+            raw=data,
+        )
+
+
+@dataclass
+class WorkflowTaskResults:
+    workflow_id: Optional[str]
+    status: Optional[str]
+    tasks: List[WorkflowTaskResult]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "WorkflowTaskResults":
+        task_items = data.get("tasks") or data.get("tasksResults") or data.get("results") or []
+        return cls(
+            workflow_id=str(data.get("workflow_id") or data.get("workflowId") or "") or None,
+            status=data.get("status"),
+            tasks=[WorkflowTaskResult.from_api(item) for item in task_items],
+            raw=data,
+        )
+
+
+@dataclass
+class WorkflowPublicUpdateResponse:
+    workflow_id: str
+    is_public: bool
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "WorkflowPublicUpdateResponse":
+        return cls(
+            workflow_id=str(data.get("workflowId") or data.get("workflow_id") or ""),
+            is_public=bool(data.get("isPublic")),
+            raw=data,
+        )
+
+
+@dataclass
+class PreparedScriptResult:
+    workflow_input: Optional[Dict[str, Any]]
+    generated_script: Optional[str]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "PreparedScriptResult":
+        return cls(
+            workflow_input=data.get("workflow_input") or data.get("workflowInput"),
+            generated_script=data.get("generated_script") or data.get("generatedScript"),
+            raw=data,
+        )
+
+
+@dataclass
+class FrameExtractionResult:
+    workflow_id: str
+    task_id: Optional[str]
+    pdb_url: Optional[str]
+    path: Optional[str]
+    frame_index: Optional[int]
+    requested_time_ns: Optional[float]
+    actual_time_ns: Optional[float]
+    atom_count: Optional[int]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "FrameExtractionResult":
+        return cls(
+            workflow_id=str(data.get("workflowId") or data.get("workflow_id") or ""),
+            task_id=str(data.get("taskId") or data.get("task_id") or "") or None,
+            pdb_url=data.get("pdbUrl") or data.get("pdb_url"),
+            path=data.get("path"),
+            frame_index=data.get("frameIndex") or data.get("frame_index"),
+            requested_time_ns=data.get("requestedTimeNs") or data.get("requested_time_ns"),
+            actual_time_ns=data.get("actualTimeNs") or data.get("actual_time_ns"),
+            atom_count=data.get("atomCount") or data.get("atom_count"),
+            raw=data,
+        )
+
+
+@dataclass
+class LibraryFileReference:
+    library_item_id: str
+    file_name: str
+
+    def to_api(self) -> Dict[str, str]:
+        return {"libraryItemId": self.library_item_id, "fileName": self.file_name}
+
+
+@dataclass
+class LibraryFileMetadata:
+    file_name: str
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "LibraryFileMetadata":
+        return cls(file_name=str(data.get("file_name") or data.get("fileName") or data.get("name") or ""), raw=data)
+
+
+@dataclass
+class LibraryItem:
+    id: str
+    name: str
+    type: str
+    file_type: Optional[str]
+    origin: Optional[str]
+    metadata: Optional[Dict[str, Any]]
+    created_at: Optional[str]
+    updated_at: Optional[str]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "LibraryItem":
+        return cls(
+            id=str(data.get("id") or ""),
+            name=str(data.get("name") or ""),
+            type=str(data.get("type") or ""),
+            file_type=data.get("fileType") or data.get("file_type"),
+            origin=data.get("origin"),
+            metadata=data.get("metadata"),
+            created_at=data.get("createdAt") or data.get("created_at"),
+            updated_at=data.get("updatedAt") or data.get("updated_at"),
+            raw=data,
+        )
+
+    def files(self) -> List[LibraryFileMetadata]:
+        metadata_files = ((self.metadata or {}).get("files") or [])
+        return [LibraryFileMetadata.from_api(item) for item in metadata_files if isinstance(item, dict)]
+
+    def stored_file_name(self) -> Optional[str]:
+        files = self.files()
+        if files:
+            return files[0].file_name
+        return None
+
+
+@dataclass
+class SlackReportResult:
+    ok: bool
+    message: Optional[str]
+    needs_slack_setup: bool
+    library_item_id: Optional[str]
+    raw: Dict[str, Any]
+
+    @classmethod
+    def from_api(cls, data: Dict[str, Any]) -> "SlackReportResult":
+        return cls(
+            ok=bool(data.get("ok")),
+            message=data.get("message"),
+            needs_slack_setup=bool(data.get("needs_slack_setup")),
+            library_item_id=str(data.get("library_item_id") or "") or None,
+            raw=data,
+        )
+

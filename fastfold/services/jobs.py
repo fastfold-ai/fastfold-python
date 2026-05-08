@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
 from ..http import HTTPClient
-from ..models import JobResults, JobPublicUpdateResponse
+from ..models import Job, JobResults, JobPublicUpdateResponse
 from ..errors import APIError
 import time
 
@@ -9,6 +9,40 @@ import time
 class JobsService:
     def __init__(self, http: HTTPClient):
         self._http = http
+
+    def create(self, payload: Dict[str, Any], from_id: Optional[str] = None) -> Job:
+        if not isinstance(payload, dict):
+            raise ValueError("payload must be a dictionary matching the JobInput schema.")
+        query_params: Dict[str, Any] = {}
+        if from_id:
+            query_params["from"] = from_id
+        data = self._http.post("/v1/jobs", json=payload, params=query_params)
+        return Job.from_api(data)
+
+    def create_from_yaml(
+        self,
+        yaml_text: str,
+        *,
+        model_name: str,
+        name: Optional[str] = None,
+        from_id: Optional[str] = None,
+        is_public: bool = False,
+        run_now: bool = True,
+        chat_id: Optional[str] = None,
+    ) -> Job:
+        params: Dict[str, Any] = {
+            "model_name": model_name,
+            "is_public": str(bool(is_public)).lower(),
+            "run_now": str(bool(run_now)).lower(),
+        }
+        if name:
+            params["name"] = name
+        if from_id:
+            params["from"] = from_id
+        if chat_id:
+            params["chat_id"] = chat_id
+        data = self._http.post_text("/v1/jobs/from-yaml", yaml_text, params=params)
+        return Job.from_api(data)
 
     def get_results(self, job_id: str) -> JobResults:
         data = self._http.get(f"/v1/jobs/{job_id}/results")
@@ -22,6 +56,23 @@ class JobsService:
         payload: Dict[str, Any] = {"isPublic": bool(is_public)}
         data = self._http.patch(f"/v1/jobs/{job_id}/public", json=payload)
         return JobPublicUpdateResponse.from_api(data)
+
+    def render_yaml(self, payload: Dict[str, Any]) -> str:
+        if not isinstance(payload, dict):
+            raise ValueError("payload must be a dictionary matching the JobInput schema.")
+        resp = self._http.request(
+            "POST",
+            "/v1/jobs/utils/yaml",
+            json=payload,
+            headers={"Accept": "application/yaml"},
+        )
+        self._http._raise_for_status(resp)
+        return resp.text
+
+    def render_json(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        if not isinstance(payload, dict):
+            raise ValueError("payload must be a dictionary matching the JobInput schema.")
+        return self._http.post("/v1/jobs/utils/json", json=payload)
 
     def wait_for_completion(
         self,

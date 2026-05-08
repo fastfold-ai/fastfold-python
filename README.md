@@ -1,15 +1,15 @@
-# FastFold Python SDK and CLI
+# FastFold SDK
 
-Python client and CLI for the FastFold Jobs API.
+Python SDK and CLI for FastFold jobs, workflows, library operations, and reports.
 
 <a href="https://colab.research.google.com/drive/1gW6p82UkzvSSzZTHgcITkzoAihuotkZm?usp=sharing" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 ## Installation
 
-From the project root:
+Install from PyPI:
 
 ```bash
-pip install .
+pip install fastfold-ai
 ```
 
 Or for development:
@@ -32,307 +32,198 @@ You can also pass an API key when creating the client or via the CLI flag `--api
 
 ## SDK Usage
 
-```python
-from fastfold import Client
+The SDK exposes both typed helpers and capability-oriented services:
 
-client = Client()  # Reads FASTFOLD_API_KEY from env by default
+- `client.fold` for the simplest fold-job flow
+- `client.jobs` for raw payloads, YAML submission, polling, and rendering helpers
+- `client.workflows` for generic workflow create/get/status/task-results/execute/YAML APIs
+- `client.library` for library item creation and file uploads
+- `client.openmm`, `client.openmmdl`, and `client.boltzgen` for the most common multi-step workflow flows
+- `client.reports` for Slack markdown report submission
 
-myJob = client.fold.create(
-    sequence="LLGDFFRKSKEKIGKEFKRIVQRIKDFLRNLVPRTES",
-    model="boltz-2",
-    is_public=True,
-)
-print("Job ID:", myJob.id)
+For end-to-end walkthroughs, downloadable input files, and additional variants, see:
 
-# Wait for completion, then fetch CIF URL (boltz-2 complex)
-results = client.jobs.wait_for_completion(myJob.id, poll_interval=5.0, timeout=900.0)
-print("Status:", results.job.status)
-print("CIF URL:", results.cif_url())
-print("Mean PLDDT:", results.metrics().mean_PLDDT)
-# Generate a shareable viewer link for this job
-link = results.get_viewer_link()
-print("Open in viewer:", link)
-```
+- [Fold](https://docs.fastfold.ai/sdk/fold)
+- [OpenMM](https://docs.fastfold.ai/sdk/openmm)
+- [OpenMMDL](https://docs.fastfold.ai/sdk/openmmdl)
+- [BoltzGen](https://docs.fastfold.ai/sdk/boltzgen)
+- [CLI](https://docs.fastfold.ai/sdk/cli)
+- [SDK overview](https://docs.fastfold.ai/sdk)
 
-Advanced usage for Boltz-2 with Affinity prediction and pockets:
+### Fold job
 
-```python
-myJob = client.fold.create(
-    name="Streptococcal protein G with Pocket",
-    model="boltz-2",
-    sequences=[
-        {
-            "proteinChain": {
-                "sequence": "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE",
-                "count": 1,
-                "chain_id": "A",
-                "label": "mobile-purple",
-            }
-        },
-        {
-            "ligandSequence": {
-                "sequence": "ATP",
-                "count": 1,
-                "chain_id": "B",
-                "label": "constitutional-brown",
-                "is_ccd": True,
-                "property_type": "affinity",
-            }
-        },
-    ],
-    params={
-        "modelName": "boltz-2",
-        "weightSet": "Boltz-2",
-        "relaxPrediction": True,
-        "method": "Boltz-2",
-        "recyclingSteps": 3,
-        "samplingSteps": 200,
-        "diffusionSample": 1,
-        "stepScale": 1.638,
-        "affinityMwCorrection": False,
-        "samplingStepsAffinity": 200,
-        "diffusionSamplesAffinity": 5,
-    },
-    constraints={
-        "pocket": [
-            {
-                "binder": {"chain_id": "B"},
-                "contacts": [
-                    {"chain_id": "A", "res_idx": 12},
-                    {"chain_id": "A", "res_idx": 15},
-                    {"chain_id": "A", "res_idx": 18},
-                ],
-            }
-        ]
-    },
-)
-
-# Wait for completion and fetch CIF URL (boltz-2 complex)
-results = client.jobs.wait_for_completion(myJob.id, poll_interval=5.0, timeout=900.0)
-print("Completed CIF URL:", results.cif_url())
-metrics = results.metrics()
-print("Mean PLDDT:", metrics.mean_PLDDT)
-print("ptm_score:", metrics.ptm_score)
-print("iptm_score:", metrics.iptm_score)
-# Boltz-2 affinity metrics (present only if provided by API)
-print("affinity_pred_value:", metrics.affinity_pred_value)
-print("affinity_probability_binary:", metrics.affinity_probability_binary)
-print("affinity_pred_value1:", metrics.affinity_pred_value1)
-print("affinity_probability_binary1:", metrics.affinity_probability_binary1)
-print("affinity_pred_value2:", metrics.affinity_pred_value2)
-print("affinity_probability_binary2:", metrics.affinity_probability_binary2)
-link = results.get_viewer_link()
-print("Open in viewer:", link)
-```
-
-### Non-complex multi-sequence artifacts (indexing)
-
-```python
-# Create a non-complex job with two protein chains and fetch per-sequence artifacts by index
-myJob = client.fold.create(
-    name="My Protein List",
-    model="simplefold_100M",
-    sequences=[
-        {
-            "proteinChain": {
-                "sequence": "MCNTNMSVSTEGAASTSQIPASEQETLVRPKPLLLKLLKSVGAQNDTYTMKEIIFYIGQYIMTKRLYDEKQQHIVYCSNDLLGDVFGVPSFSVKEHRKIYAMIYRNLVAV",
-                "count": 1,
-                "chain_id": "A",
-                "label": "specific-white",
-            }
-        },
-        {
-            "proteinChain": {
-                "sequence": "SQETFSGLWKLLPPE",
-                "count": 1,
-                "chain_id": "B",
-                "label": "wily-amethyst",
-            }
-        },
-    ],
-    params={
-        "modelName": "simplefold_100M",
-        "weightSet": "SimpleFold",
-        "method": "SimpleFold",
-    },
-)
-
-# Wait for completion then access per-sequence artifacts by index
-results = client.jobs.wait_for_completion(myJob.id, poll_interval=5.0, timeout=900.0)
-# Access per-sequence artifacts by index
-cif_url_chain_a = results[0].cif_url()
-cif_url_chain_b = results[1].cif_url()
-
-print("Chain A CIF:", cif_url_chain_a)
-print("Chain B CIF:", cif_url_chain_b)
-
-m0 = results[0].metrics()
-m1 = results[1].metrics()
-print("Chain A mean PLDDT:", m0.mean_PLDDT)
-print("Chain B mean PLDDT:", m1.mean_PLDDT)
-
-# Generate a shareable viewer link for this job
-link = results.get_viewer_link()
-print("Open in viewer:", link)
-
-```
-
-### Create with library source (from_id) and additional params
-
-```python
-myJob = client.fold.create(
-    model="boltz-2",
-    sequence="LLGDFFRKSKEKIGKEFKRIVQRIKDFLRNLVPRTES",
-    from_id="770e8400-e29b-41d4-a716-446655440002",
-    params={"relaxPrediction": True, "recyclingSteps": 2},
-)
-
-# Wait for completion
-results = client.jobs.wait_for_completion(myJob.id, poll_interval=5.0, timeout=900.0)
-print("Completed:", results.job.status)
-```
-
-### Fetch results and status
-
-```python
-# Prefer waiting for completion in scripts/notebooks
-results = client.jobs.wait_for_completion(myJob.id, poll_interval=5.0, timeout=900.0)
-status = results.job.status
-print("Status:", status)
-```
-
-Status could be:
-
-- PENDING: Job queued but not yet initialized
-- INITIALIZED: Job created and ready to run
-- RUNNING: Job is processing
-- COMPLETED: Job finished successfully
-- FAILED: Job encountered an error
-- STOPPED: Job was stopped before completion
-
-### Update visibility
-
-```python
-client.jobs.set_public(myJob.id, True)  # make job publicly accessible
-```
-
-### Get artifact URLs
-
-```python
-# Ensure we have completed results
-results = client.jobs.wait_for_completion(myJob.id, poll_interval=5.0, timeout=900.0)
-
-# Complex jobs (shared artifacts at top level)
-if results.job.is_complex:
-    cif_url = results.cif_url()
-    pdb_url = results.pdb_url()
-    pae_url = results.pae_plot_url()
-    plddt_url = results.plddt_plot_url()
-else:
-    # Non-complex: per-sequence artifacts via indexing
-    cif_url = results[0].cif_url()
-    pdb_url = results[0].pdb_url()
-```
-
-### Get metrics
-
-```python
-# Ensure the job has completed
-results = client.jobs.wait_for_completion(myJob.id, poll_interval=5.0, timeout=900.0)
-
-# Complex (boltz-2) jobs: top-level metrics
-if results.job.is_complex:
-    metrics = results.metrics()
-    print("mean_PLDDT:", metrics.mean_PLDDT)
-    print("ptm_score:", metrics.ptm_score)
-    print("iptm_score:", metrics.iptm_score)
-    print("max_pae_score:", metrics.max_pae_score)
-    # Boltz-2 affinity metrics (present only if provided by API)
-    print("affinity_pred_value:", metrics.affinity_pred_value)
-    print("affinity_probability_binary:", metrics.affinity_probability_binary)
-    print("affinity_pred_value1:", metrics.affinity_pred_value1)
-    print("affinity_probability_binary1:", metrics.affinity_probability_binary1)
-    print("affinity_pred_value2:", metrics.affinity_pred_value2)
-    print("affinity_probability_binary2:", metrics.affinity_probability_binary2)
-else:
-    # Non-complex: per-sequence metrics via indexing
-    m0 = results[0].metrics()
-    print("Chain A mean_PLDDT:", m0.mean_PLDDT)
-    m1 = results[1].metrics()
-    print("Chain B mean_PLDDT:", m1.mean_PLDDT)
-```
-
-### Fetch existing job by ID
+Create a fold job, wait for completion, then inspect the returned artifacts:
 
 ```python
 from fastfold import Client
 
 client = Client()
-job_id = "550e8400-e29b-41d4-a716-446655440000"
 
-# Wait for the existing job to complete
-results = client.jobs.wait_for_completion(job_id, poll_interval=5.0, timeout=900.0)
-print("Status:", results.job.status)
+job = client.fold.create(
+    sequence="LLGDFFRKSKEKIGKEFKRIVQRIKDFLRNLVPRTES",
+    model="boltz-2",
+    is_public=True,
+)
 
-# Complex job example (top-level artifacts)
-cif_url = results.cif_url()
-pdb_url = results.pdb_url()
-pae_url = results.pae_plot_url()
-plddt_url = results.plddt_plot_url()
-print("CIF URL:", cif_url)
-print("PDB URL:", pdb_url)
-print("PAE URL:", pae_url)
-print("pLDDT URL:", plddt_url)
-
-metrics = results.metrics()
-print("mean_PLDDT:", metrics.mean_PLDDT)
-print("ptm_score:", metrics.ptm_score)
-print("iptm_score:", metrics.iptm_score)
-print("max_pae_score:", metrics.max_pae_score)
-
-# Optional: viewer link
-link = results.get_viewer_link()
-print("Open in viewer:", link)
+results = client.jobs.wait_for_completion(job.id, poll_interval=5.0, timeout=900.0)
+print(results.job.status)
+print(results.cif_url())
+print(results.metrics().mean_PLDDT)
+print(results.get_viewer_link())
 ```
 
+### OpenMM first run from local files
+
+Submit an OpenMM workflow from a local structure file and its matching PAE JSON:
+
 ```python
-# Non-complex example (index into sequences)
-results = client.jobs.wait_for_completion(job_id, poll_interval=5.0, timeout=900.0)
-cif_seq0 = results[0].cif_url()
-pdb_seq0 = results[0].pdb_url()
-m0 = results[0].metrics()
-print("Seq0 CIF:", cif_seq0)
-print("Seq0 PDB:", pdb_seq0)
-print("Seq0 mean_PLDDT:", m0.mean_PLDDT)
+from fastfold import Client
+
+client = Client()
+workflow = client.openmm.submit_from_manual_files(
+    pdb_path="./protein.pdb",
+    pae_path="./pae.json",
+    simulation_name="AF-P00698",
+    residue_profile="calvados3",
+    temp=293.15,
+    ionic=0.15,
+    ph=7.5,
+    step_size_ns=0.01,
+    sim_length_ns=10.0,
+    box_length=50,
+)
+print(workflow.workflow_id)
+```
+
+### OpenMMDL from local files
+
+Submit an OpenMMDL workflow from local topology and ligand files:
+
+```python
+from fastfold import Client
+
+client = Client()
+workflow = client.openmmdl.submit_from_local_files(
+    topology_path="./KEAP1kd.pdb",
+    ligand_paths=["./IQK.sdf"],
+    simulation_name="KEAP1 + IQK",
+    input_json={
+        "smallMoleculeMode": "single",
+        "equilibration": "only_minimization",
+        "sim_length_ns": 0.05,
+        "step_time_ps": 0.002,
+        "failure_retries": 0,
+        "addWater": False,
+        "addMembrane": False,
+        "boxType": "geometry",
+        "geomPadding": 1.0,
+        "geometryDropdown": "cube",
+        "membranePadding": 2.0,
+        "writeDCD": True,
+        "dcdFrames": 5,
+        "pdbInterval_ns": 0.05,
+        "writeData": False,
+        "writeCheckpoint": False,
+    },
+)
+print(workflow.workflow_id)
+```
+
+### BoltzGen minimal workflow
+
+Create a draft BoltzGen workflow, upload a minimal `workflow.yml`, and execute it:
+
+```python
+from pathlib import Path
+
+from fastfold import Client
+
+client = Client()
+draft = client.boltzgen.create_draft(name="boltzgen_demo")
+client.boltzgen.upsert_workflow_yml(
+    draft.workflow_id,
+    Path("fastfold/examples/boltzgen/minimal.workflow.yml").read_text(),
+)
+client.boltzgen.execute(draft.workflow_id)
+print(draft.workflow_id)
+```
+
+For preset bundles, downloadable design-spec files, and multi-spec examples, see
+[BoltzGen](https://docs.fastfold.ai/sdk/boltzgen).
+
+### Slack report sharing
+
+Send a markdown report and optionally persist it as a library item:
+
+```python
+from fastfold import Client
+
+client = Client()
+result = client.reports.send_agent_cli_report(
+    "## Demo Report\n\n- Workflow completed.\n- Artifacts are ready.",
+    report_name="demo_report",
+)
+print(result.ok, result.library_item_id)
 ```
 
 ## CLI Usage
 
-Submit a folding job:
+The CLI keeps `fastfold-cli fold` working, but it now also exposes resource-oriented subcommands.
+For the complete command matrix, see [CLI](https://docs.fastfold.ai/sdk/cli).
 
 ```bash
+# Fold job
 fastfold-cli fold --sequence "LLGDFFRKSKEKIGKEFKRIVQRIKDFLRNLVPRTES" --model boltz-2
+
+# OpenMM first run from local files
+fastfold-cli workflows openmm from-manual-files \
+  --pdb ./protein.pdb \
+  --pae ./pae.json \
+  --simulation-name AF-P00698 \
+  --force-field calvados3 \
+  --temperature 293.15 \
+  --ionic 0.15 \
+  --ph 7.5 \
+  --step-size-ns 0.01 \
+  --sim-length-ns 10 \
+  --box-length 50
+
+# OpenMMDL from local files
+fastfold-cli workflows openmmdl from-local-files \
+  --topology ./KEAP1kd.pdb \
+  --ligand ./IQK.sdf \
+  --simulation-name "KEAP1 + IQK" \
+  --input-json fastfold/examples/openmmdl/workflow_input.json
+
+# BoltzGen draft
+fastfold-cli workflows boltzgen create-draft --name demo
+
+# Report sharing
+fastfold-cli reports slack --markdown-file fastfold/examples/reports/sample_report.md
 ```
 
-Optional flags:
+Most create and inspection commands are script-friendly: they print IDs by default, or full JSON with `--json`.
 
-```bash
-fastfold-cli fold \
-  --sequence "..." \
-  --model boltz-2 \
-  --name "My Job" \
-  --api-key "sk-..." \
-  --base-url "https://api.fastfold.ai"
-```
+## Packaged Examples
 
-On success the CLI prints the created job ID to stdout.
+Small, reusable text assets ship under `fastfold/examples/`:
 
-### AI Research Agent
+- `fastfold/examples/fold/job_payload.json`
+- `fastfold/examples/openmm/from_manual_files.json`
+- `fastfold/examples/openmm/from_fold_job.json`
+- `fastfold/examples/openmmdl/workflow_input.json`
+- `fastfold/examples/openmmdl/from_local_files.json`
+- `fastfold/examples/openmmdl/quick_water_box.workflow_input.json`
+- `fastfold/examples/openmmdl/quick_membrane.workflow_input.json`
+- `fastfold/examples/boltzgen/minimal.workflow.yml`
+- `fastfold/examples/boltzgen/design_spec.example.yaml`
+- `fastfold/examples/boltzgen/replacements.example.json`
+- `fastfold/examples/fold/boltz2_affinity_input.yaml`
+- `fastfold/examples/reports/sample_report.md`
 
-Launch the FastFold AI research agent (installs `fastfold-agent-cli` automatically if not present):
+Larger reference bundles and downloadable preset files live in the docs:
 
-```bash
-fastfold-cli agent "what are the top EGFR inhibitors for lung cancer?"
-```
-
-Any flags or arguments are forwarded directly to the agent.
+- [SDK overview](https://docs.fastfold.ai/sdk)
+- [OpenMM](https://docs.fastfold.ai/sdk/openmm)
+- [OpenMMDL](https://docs.fastfold.ai/sdk/openmmdl)
+- [BoltzGen](https://docs.fastfold.ai/sdk/boltzgen)

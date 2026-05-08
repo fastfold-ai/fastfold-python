@@ -1,0 +1,14 @@
+{
+  "name": "Example Fold Job",
+  "sequences": [
+    {
+      "proteinChain": {
+        "sequence": "MKTIIALSYIFCLVFA",
+        "chain_id": "A"
+      }
+    }
+  ],
+  "params": {
+    "modelName": "boltz-2"
+  }
+}
