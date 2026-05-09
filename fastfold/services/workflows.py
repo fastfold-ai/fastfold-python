@@ -192,7 +192,7 @@ class WorkflowsService:
         while True:
             status = self.status(workflow_id)
             if log:
-                print(f"[FastFold] workflow {workflow_id} status: {status.status}")
+                print(f"[Fastfold] workflow {workflow_id} status: {status.status}")
 
             if status.status in {"COMPLETED", "FAILED", "STOPPED"}:
                 now = time.time()

@@ -1,6 +1,6 @@
-# FastFold SDK
+# Fastfold SDK
 
-Python SDK and CLI for FastFold jobs, workflows, library operations, and reports.
+Python SDK and CLI for Fastfold jobs, workflows, library operations, and reports.
 
 <a href="https://colab.research.google.com/drive/1gW6p82UkzvSSzZTHgcITkzoAihuotkZm?usp=sharing" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
@@ -38,7 +38,7 @@ The SDK exposes both typed helpers and capability-oriented services:
 - `client.jobs` for raw payloads, YAML submission, polling, and rendering helpers
 - `client.workflows` for generic workflow create/get/status/task-results/execute/YAML APIs
 - `client.library` for library item creation and file uploads
-- `client.openmm`, `client.openmmdl`, and `client.boltzgen` for the most common multi-step workflow flows
+- `client.openmm`, `client.openmmdl`, `client.evolla`, and `client.boltzgen` for the most common multi-step workflow flows
 - `client.reports` for Slack markdown report submission
 
 For end-to-end walkthroughs, downloadable input files, and additional variants, see:
@@ -46,6 +46,7 @@ For end-to-end walkthroughs, downloadable input files, and additional variants, 
 - [Fold](https://docs.fastfold.ai/sdk/fold)
 - [OpenMM](https://docs.fastfold.ai/sdk/openmm)
 - [OpenMMDL](https://docs.fastfold.ai/sdk/openmmdl)
+- [Evolla](https://docs.fastfold.ai/sdk/evolla)
 - [BoltzGen](https://docs.fastfold.ai/sdk/boltzgen)
 - [CLI](https://docs.fastfold.ai/sdk/cli)
 - [SDK overview](https://docs.fastfold.ai/sdk)
@@ -129,6 +130,38 @@ workflow = client.openmmdl.submit_from_local_files(
 print(workflow.workflow_id)
 ```
 
+### Evolla from a local structure file
+
+Upload a **.cif** / **.mmcif** / **.pdb** to your library and start Evolla in one call:
+
+```python
+from fastfold import Client
+
+client = Client()
+workflow = client.evolla.submit_from_local_file(
+    "./structure.cif",
+    "What is the likely function of this domain?",
+)
+print(workflow.workflow_id)
+```
+
+### Evolla from a completed fold job
+
+Ask a natural-language question about a structure from an existing fold (uses the same `workflow_input` shape as the web app: `sourceType` / `targetSource` `sequence`, artifact URL, and ids):
+
+```python
+from fastfold import Client
+
+client = Client()
+workflow = client.evolla.submit_from_fold_job(
+    "YOUR_JOB_ID",
+    "What is the likely function of this domain?",
+)
+print(workflow.workflow_id)
+```
+
+If the CIF URL in job results is not a signed path that embeds your user id, pass `source_user_id="..."` or set `FASTFOLD_EVOLLA_SOURCE_USER_ID`. See [Evolla](https://docs.fastfold.ai/sdk/evolla).
+
 ### BoltzGen minimal workflow
 
 Create a draft BoltzGen workflow, upload a minimal `workflow.yml`, and execute it:
@@ -195,6 +228,12 @@ fastfold-cli workflows openmmdl from-local-files \
   --simulation-name "KEAP1 + IQK" \
   --input-json fastfold/examples/openmmdl/workflow_input.json
 
+# Evolla from a local structure
+fastfold-cli workflows evolla from-file ./structure.cif --question "What is the function of this protein?"
+
+# Evolla from fold results
+fastfold-cli workflows evolla from-fold-job YOUR_JOB_ID --question "What is the function of this protein?"
+
 # BoltzGen draft
 fastfold-cli workflows boltzgen create-draft --name demo
 
@@ -215,6 +254,7 @@ Small, reusable text assets ship under `fastfold/examples/`:
 - `fastfold/examples/openmmdl/from_local_files.json`
 - `fastfold/examples/openmmdl/quick_water_box.workflow_input.json`
 - `fastfold/examples/openmmdl/quick_membrane.workflow_input.json`
+- `fastfold/examples/evolla/from_fold_job.template.json`
 - `fastfold/examples/boltzgen/minimal.workflow.yml`
 - `fastfold/examples/boltzgen/design_spec.example.yaml`
 - `fastfold/examples/boltzgen/replacements.example.json`
@@ -226,4 +266,5 @@ Larger reference bundles and downloadable preset files live in the docs:
 - [SDK overview](https://docs.fastfold.ai/sdk)
 - [OpenMM](https://docs.fastfold.ai/sdk/openmm)
 - [OpenMMDL](https://docs.fastfold.ai/sdk/openmmdl)
+- [Evolla](https://docs.fastfold.ai/sdk/evolla)
 - [BoltzGen](https://docs.fastfold.ai/sdk/boltzgen)

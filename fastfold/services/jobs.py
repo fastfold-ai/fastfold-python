@@ -98,7 +98,7 @@ class JobsService:
             results = self.get_results(job_id)
             status = results.job.status
             if log:
-                print(f"[FastFold] job {job_id} status: {status}")
+                print(f"[Fastfold] job {job_id} status: {status}")
             if status != last_status and on_update:
                 on_update(status)
             last_status = status

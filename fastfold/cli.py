@@ -43,7 +43,7 @@ def _add_visibility_flags(parser: argparse.ArgumentParser) -> None:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="fastfold-cli", description="FastFold CLI")
+    parser = argparse.ArgumentParser(prog="fastfold-cli", description="Fastfold CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     fold_parser = subparsers.add_parser("fold", help="Create a folding job")
@@ -301,6 +301,49 @@ def _build_parser() -> argparse.ArgumentParser:
     openmmdl_extract.add_argument("--dt-in-ps", type=float, default=0.0, help="Timestep override in ps.")
     _add_client_args(openmmdl_extract)
     _add_json_flag(openmmdl_extract)
+
+    evolla_parser = workflows_subparsers.add_parser("evolla", help="Evolla convenience commands")
+    evolla_subparsers = evolla_parser.add_subparsers(dest="evolla_command", required=True)
+
+    evolla_from_fold = evolla_subparsers.add_parser("from-fold-job", help="Create evolla_v1 from a completed fold job")
+    evolla_from_fold.add_argument("job_id", help="Fold job ID")
+    evolla_from_fold.add_argument("--question", required=True, help="Natural-language question about the structure.")
+    evolla_from_fold.add_argument("--name", help="Workflow display name.")
+    evolla_from_fold.add_argument("--job-run-id", help="Source job run ID (default: latest from job results).")
+    evolla_from_fold.add_argument("--sequence-id", help="Source sequence ID (default: first protein sequence).")
+    evolla_from_fold.add_argument(
+        "--source-user-id",
+        help="Artifact owner id for Evolla resolution (or set FASTFOLD_EVOLLA_SOURCE_USER_ID).",
+    )
+    evolla_from_fold.add_argument("--public", action="store_true", help="Make the workflow public.")
+    _add_client_args(evolla_from_fold)
+    _add_json_flag(evolla_from_fold)
+
+    evolla_from_local = evolla_subparsers.add_parser(
+        "from-file",
+        help="Upload a structure file and create evolla_v1 (library upload + question)",
+    )
+    evolla_from_local.add_argument("file_path", help="Local structure path (.cif, .mmcif, .pdb, …).")
+    evolla_from_local.add_argument("--question", required=True, help="Natural-language question about the structure.")
+    evolla_from_local.add_argument("--name", help="Workflow display name.")
+    evolla_from_local.add_argument("--file-type", default="protein", help="Library file type (default protein).")
+    evolla_from_local.add_argument("--item-name", help="Library item name (default derived from file name).")
+    evolla_from_local.add_argument("--parent-id", help="Optional parent folder library id.")
+    evolla_from_local.add_argument("--model-type", default="evolla-10b", help="workflow_input.modelType.")
+    evolla_from_local.add_argument("--public", action="store_true", help="Make the workflow public.")
+    _add_client_args(evolla_from_local)
+    _add_json_flag(evolla_from_local)
+
+    evolla_from_input = evolla_subparsers.add_parser(
+        "from-input",
+        help="Create evolla_v1 from a workflow_input JSON/YAML file (see docs for targetSource shapes)",
+    )
+    evolla_from_input.add_argument("--file", required=True, help="Path to workflow_input or '-' for stdin.")
+    evolla_from_input.add_argument("--format", choices=["auto", "json", "yaml"], default="auto")
+    evolla_from_input.add_argument("--name", default="", help="Workflow display name.")
+    evolla_from_input.add_argument("--create-mode", default="", help="Optional create mode.")
+    _add_client_args(evolla_from_input)
+    _add_json_flag(evolla_from_input)
 
     boltzgen_parser = workflows_subparsers.add_parser("boltzgen", help="BoltzGen convenience commands")
     boltzgen_subparsers = boltzgen_parser.add_subparsers(dest="boltzgen_command", required=True)
@@ -692,11 +735,49 @@ def _package_example_files() -> Dict[str, str]:
         "openmmdl_from_local_files_json": str(root.joinpath("openmmdl", "from_local_files.json")),
         "openmmdl_quick_water_box_input_json": str(root.joinpath("openmmdl", "quick_water_box.workflow_input.json")),
         "openmmdl_quick_membrane_input_json": str(root.joinpath("openmmdl", "quick_membrane.workflow_input.json")),
+        "evolla_from_fold_job_template_json": str(root.joinpath("evolla", "from_fold_job.template.json")),
         "boltzgen_workflow_yml": str(root.joinpath("boltzgen", "minimal.workflow.yml")),
         "boltzgen_design_spec_yaml": str(root.joinpath("boltzgen", "design_spec.example.yaml")),
         "boltzgen_replacements_json": str(root.joinpath("boltzgen", "replacements.example.json")),
         "slack_report_md": str(root.joinpath("reports", "sample_report.md")),
     }
+
+
+def handle_evolla(args: argparse.Namespace, client: Client) -> int:
+    if args.evolla_command == "from-fold-job":
+        workflow = client.evolla.submit_from_fold_job(
+            args.job_id,
+            args.question,
+            name=args.name,
+            source_job_run_id=args.job_run_id,
+            source_sequence_id=args.sequence_id,
+            source_user_id=args.source_user_id,
+            is_public=args.public,
+        )
+        _emit_json(workflow.raw) if args.json else print(workflow.workflow_id)
+    elif args.evolla_command == "from-file":
+        workflow = client.evolla.submit_from_local_file(
+            args.file_path,
+            args.question,
+            name=args.name,
+            file_type=args.file_type,
+            item_name=args.item_name,
+            parent_id=args.parent_id,
+            model_type=args.model_type,
+            is_public=args.public,
+        )
+        _emit_json(workflow.raw) if args.json else print(workflow.workflow_id)
+    elif args.evolla_command == "from-input":
+        workflow = client.evolla.submit_from_input_file(
+            args.file,
+            name=args.name,
+            create_mode=args.create_mode,
+            format=args.format,
+        )
+        _emit_json(workflow.raw) if args.json else print(workflow.workflow_id)
+    else:
+        raise ValueError(f"Unsupported Evolla command: {args.evolla_command}")
+    return 0
 
 
 def handle_boltzgen(args: argparse.Namespace, client: Client) -> int:
@@ -792,6 +873,8 @@ def handle_workflows(args: argparse.Namespace) -> int:
             return handle_openmm(args, client)
         elif command == "openmmdl":
             return handle_openmmdl(args, client)
+        elif command == "evolla":
+            return handle_evolla(args, client)
         elif command == "boltzgen":
             return handle_boltzgen(args, client)
         else:

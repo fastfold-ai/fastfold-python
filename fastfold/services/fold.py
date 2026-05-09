@@ -44,7 +44,7 @@ class FoldService:
         else:
             resolved_sequences = sequences
 
-        payload: Dict[str, Any] = {"name": name or "FastFold Job", "sequences": resolved_sequences, "params": {"modelName": model}}
+        payload: Dict[str, Any] = {"name": name or "Fastfold Job", "sequences": resolved_sequences, "params": {"modelName": model}}
 
         if is_public is not None:
             payload["isPublic"] = is_public

@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fastfold-ai"
-version = "0.2.0"
-description = "Official Python SDK and CLI for the FastFold API"
+version = "0.2.3"
+description = "Official Python SDK and CLI for the Fastfold API"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "Apache-2.0"
-authors = [{ name = "FastFold", email = "hello@fastfold.ai" }]
+authors = [{ name = "Fastfold", email = "hello@fastfold.ai" }]
 dependencies = ["requests>=2.31.0,<3", "PyYAML>=6.0"]
 keywords = ["protein", "folding", "ai", "fastfold", "sdk", "cli"]
 classifiers = [

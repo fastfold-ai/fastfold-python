@@ -1,0 +1,10 @@
+{
+  "sourceType": "fold_job",
+  "targetSource": "sequence",
+  "sourceUserId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "sourceJobId": "550e8400-e29b-41d4-a716-446655440000",
+  "sourceJobRunId": "35a22a69-89ef-4a6e-8a7f-0290ba4e8a1f",
+  "sourceSequenceId": "39a5f8c6-a6cb-4bc8-89f8-0bbeb75e8a83",
+  "cifUrl": "https://YOUR-SIGNED-CIF-URL",
+  "question": "What is the function of this protein?"
+}

@@ -4,6 +4,7 @@ from typing import Optional
 from .errors import AuthenticationError
 from .http import HTTPClient
 from .services.boltzgen import BoltzGenService
+from .services.evolla import EvollaService
 from .services.fold import FoldService
 from .services.jobs import JobsService
 from .services.library import LibraryService
@@ -32,6 +33,7 @@ class Client:
         self.library = LibraryService(self._http)
         self.openmm = OpenMMService(self.jobs, self.workflows, self.library)
         self.openmmdl = OpenMMDLService(self.workflows, self.library)
+        self.evolla = EvollaService(self.jobs, self.workflows, self.library)
         self.boltzgen = BoltzGenService(self.workflows, self.library)
         self.reports = ReportsService(self._http)
 
